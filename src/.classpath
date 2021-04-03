@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path=""/>
+	<classpathentry kind="lib" path="D:/Program Files/SmartFoxServer_2X/SFS2X/lib/sfs2x.jar"/>
+	<classpathentry kind="lib" path="D:/Program Files/SmartFoxServer_2X/SFS2X/lib/sfs2x-core.jar"/>
+	<classpathentry kind="lib" path="D:/Software/SFS Software-libs/eclipselink-2.7.7.v20200504-69f2c2b80d/eclipselink/jlib/eclipselink.jar"/>
+	<classpathentry kind="lib" path="D:/Software/SFS Software-libs/eclipselink-2.7.7.v20200504-69f2c2b80d/eclipselink/jlib/jpa/jakarta.persistence_2.2.3.jar"/>
+	<classpathentry kind="lib" path="D:/Program Files/SmartFoxServer_2X/SFS2X/lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="output" path=""/>
+</classpath>
