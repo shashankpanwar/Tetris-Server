@@ -89,8 +89,6 @@ public class LoginPreProcess implements ILoginAssistantPlugin {
 	public void execute(LoginData ld) throws Exception {
 		String clientPass = ld.clientIncomingData.getUtfString("password");
 		String username = ld.userName.toString();
-		// Let's see if the password from the DB matches that of the user
-		IDBManager dbManager = TrisExtension.sfs2xDB;
 		System.out.println("!@#!@#!@# LoginPreProcess em - " + em + "   username - " + username
 				+ " ld.password-" + ld.password + " clientPass- " + clientPass);
 		try {

@@ -22,13 +22,15 @@ public class OnUserGoneHandler extends BaseServerEventHandler
 	public void handleServerEvent(ISFSEvent event) throws SFSException
 	{
 		trace("@#@#@@# ISFSEvent - "+event.getType());
+		User user = (User) event.getParameter(SFSEventParam.USER);
+		trace("@#@#@@# ISFSEvent - "+user.getName());
 		try
 		{
 		TrisExtension gameExt = (TrisExtension) getParentExtension();
 		Room gameRoom = gameExt.getGameRoom();
 		log.info("Before Removing the gameMap  UserGoneHandler for gameName - "+gameRoom.getName());
 		// Get event params
-		User user = (User) event.getParameter(SFSEventParam.USER);
+		
 		Integer oldPlayerId;
 		
 		if(gameExt.getGameMap().get(gameRoom.getName()) != null)

@@ -1,6 +1,5 @@
 package sfs2x.extensions.games.tris;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -9,15 +8,19 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.exceptions.SFSRuntimeException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import com.smartfoxserver.v2.extensions.ExtensionLogLevel;
+
+import sfs2x.extensions.games.resource.GameStakes;
 
 public class MoveHandler extends BaseClientRequestHandler {
 	static Logger log = Logger.getLogger(MoveHandler.class.getName());
 	private static final String CMD_WIN = "win";
 	private static final String CMD_TIE = "tie";
 	private static final String CMD_MOVE = "move";
+
 	@Override
 	public void handleClientRequest(User user, ISFSObject params) {
 		try {
@@ -40,41 +43,50 @@ public class MoveHandler extends BaseClientRequestHandler {
 					log.info("MoveHandler First gameExt.isGameStarted()" + gameExt.isGameStarted()
 							+ " gameExt.getWhoseTurn()- " + gameExt.getWhoseTurn() + " and  user-" + user.getName());
 					if (gameExt.getWhoseTurn() == null) {
-						log.info("MoveHandler First whoseturn is  null and **Updating** - gameExt.getGameMap().get(user.getName()) -- "
-								+ gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
-						if (gameExt.getGameMap().get((gameExt.getGameRoom().getName())) != null) {
+						log.info(
+								"MoveHandler First whoseturn is  null and **Updating** - gameExt.getGameMap().get(user.getName()) -- "
+										+ TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
+						if (TrisExtension.getGameMap().get((gameExt.getGameRoom().getName())) != null) {
 							log.info("MoveHandler First setting the turn whoseturn is null ");
-							gameExt.setTurn(gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
+							gameExt.setTurn(TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
 						}
 					}
+
 					if (gameExt.getWhoseTurn() == user) {
+
 						log.info("MoveHandler First whoseturn matched user and board.getTileAt(moveX, moveY)- "
 								+ board.getTileAt(moveX, moveY));
 						if (board.getTileAt(moveX, moveY) == Tile.EMPTY) {
 							log.info("MoveHandler First equal empty user.getPlayerId()- " + user.getPlayerId());
-							if (gameExt.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
-								log.info("MoveHandler First getting the value for playerId -  "
-										+ gameExt.getGameRoom().getName());
-								User userGame = gameExt.getGameMap().get(gameExt.getGameRoom().getName());
-								Map<Room, Integer> localMap = userGame.getPlayerIds();
-								log.info("MoveHandler First Usergame - " + userGame.getName()
-										+ " and  user.getPlayerId() - " + user.getPlayerId());
-								final User innerUser = user;
-								localMap.forEach((Room, Id) -> {
-									if (Room.getName().equalsIgnoreCase(gameExt.getGameRoom().getName())) {
-										log.info(" user.getPlayerId() -  "+innerUser.getPlayerId() +" id - "+Id);
-										if (innerUser.getPlayerId() != Id) {
-											log.info(String.format("Updating First the playerId-%s to id- %s for user- %s",
-													innerUser.getPlayerId(), Id, innerUser.getName()));
-											innerUser.setPlayerId(Id, userGame.getLastJoinedRoom());
-											log.info(String.format("MoveHandler First user.setPlayerId(Id, userGame.getLastJoinedRoom());",Id,userGame.getLastJoinedRoom()));
-										}
-									}
 
-								});
-								user = innerUser;
-								log.info("**************** First user name - "+user.getName()+" and playerId -"+user.getPlayerId());
+							if (TrisExtension.getUserAssignedID()
+									.get(gameExt.getGameRoom().getName() + user.getName()) == null) {
+								log.info(
+										"*** UserAssignedID *** MoveHandler First updating the UserAssignedID gameExt.getUserAssignedID().get(gameExt.getGameRoom().getName()+user.getName()) "
+												+ gameExt.getGameRoom().getName() + user.getName() + " with user - "
+												+ user.getName() + " playerId - " + user.getPlayerId());
+								TrisExtension.getUserAssignedID().put(gameExt.getGameRoom().getName() + user.getName(),
+										user.getPlayerId());
+							}
+							if (TrisExtension.getUserAssignedID()
+									.get(gameExt.getGameRoom().getName() + user.getName()) > 0) {
+								log.info(
+										"*** UserAssignedID *** MoveHandler First getting the UserAssignedID gameExt.getUserAssignedID().get(gameExt.getGameRoom().getName()+user.getName()) "
+												+ gameExt.getGameRoom().getName() + user.getName() + " with user - "
+												+ user.getName() + " playerId - " + user.getPlayerId());
+								Integer id = TrisExtension.getUserAssignedID()
+										.get(gameExt.getGameRoom().getName() + user.getName());
+								log.info("*** UserAssignedID *** got ID -" + id + " Recieved id - "
+										+ user.getPlayerId());
+								if (user.getPlayerId() != id) {
+									log.info(
+											"*** UserAssignedID *** First Updating PlayerID  before user.getPlayerId()-  "
+													+ user.getPlayerId() + "  after ID -  " + id);
+									user.setPlayerId(id, user.getLastJoinedRoom());
+									log.info("*** UserAssignedID *** First After Updating PlayerID -  "
+											+ user.getPlayerId());
 
+								}
 							}
 							// Set game board tile
 							board.setTileAt(moveX, moveY, user.getPlayerId() == 1 ? Tile.GREEN : Tile.RED);
@@ -84,7 +96,8 @@ public class MoveHandler extends BaseClientRequestHandler {
 							respObj.putInt("x", moveX);
 							respObj.putInt("y", moveY);
 							respObj.putInt("t", user.getPlayerId());
-							log.info("MoveHandler First move command before CMD_MOVE- "+CMD_MOVE+ " gameExt.getGameRoom().getUserList() - "+gameExt.getGameRoom().getUserList());
+							log.info("MoveHandler First move command before CMD_MOVE- " + CMD_MOVE
+									+ " gameExt.getGameRoom().getUserList() - " + gameExt.getGameRoom().getUserList());
 							send(CMD_MOVE, respObj, gameExt.getGameRoom().getUserList());
 
 							// Increse move count and check game status
@@ -97,12 +110,16 @@ public class MoveHandler extends BaseClientRequestHandler {
 							checkBoardState(gameExt);
 							log.info(
 									"MoveHandler First move checkBoardState after gameExt.getGameMap().get(user.getName()) - "
-											+ gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
-							if (gameExt.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
+											+ TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
+							if (TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
 								log.info("MoveHandler First updating the turn whoseturn value "
-										+ gameExt.getGameRoom().getName() + " and  gameExt.getWhoseTurn() - "+gameExt.getWhoseTurn());
-								gameExt.getGameMap().put(gameExt.getGameRoom().getName(), gameExt.getWhoseTurn());
+										+ gameExt.getGameRoom().getName() + " and  gameExt.getWhoseTurn() - "
+										+ gameExt.getWhoseTurn());
+								if (gameExt.getWhoseTurn() != null)
+									TrisExtension.getGameMap().put(gameExt.getGameRoom().getName(),
+											gameExt.getWhoseTurn());
 							}
+
 						}
 					} else
 						gameExt.trace(ExtensionLogLevel.WARN, "Wrong turn error. It was expcted: "
@@ -120,73 +137,60 @@ public class MoveHandler extends BaseClientRequestHandler {
 						user.getPlayerId(), moveX, moveY, board.getTileAt(moveX, moveY),
 						gameExt.getGameRoom().getName()));
 				if (gameExt.getWhoseTurnSecond() == null) {
-					
-					if (gameExt.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
+
+					if (TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
 						log.info("MoveHandler Second  setting the turn whoseturnSecond is null ");
-						gameExt.setWhoseTurnSecond(gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
+						gameExt.setWhoseTurnSecond(TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
 					}
 				}
 				if (gameExt.isGameStartedSecond()) {
-					
+
 					if (gameExt.getWhoseTurnSecond() == null) {
-						log.info(" @#@#@# getWhoseTurnSecond is null and  gameExt.getGameRoom().getName()- "+gameExt.getGameRoom().getName()+ " and gameExt.getGameMap().get(gameExt.getGameRoom().getName()) - "+gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
-						gameExt.setWhoseTurnSecond(gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
+						log.info(" @#@#@# getWhoseTurnSecond is null and  gameExt.getGameRoom().getName()- "
+								+ gameExt.getGameRoom().getName()
+								+ " and gameExt.getGameMap().get(gameExt.getGameRoom().getName()) - "
+								+ TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
+						gameExt.setWhoseTurnSecond(TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
 					}
+
 					if (gameExt.getWhoseTurnSecond() == user) {
 						log.info("MoveHandler Second whoseturn matched user and board.getTileAt(moveX, moveY)- "
 								+ board.getTileAt(moveX, moveY));
 						if (board.getTileAt(moveX, moveY) == Tile.EMPTY) {
-						
-							if (gameExt.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
-								log.info("MoveHandler Second getting the value for playerId -  "
-										+ gameExt.getGameRoom().getName());
-								User userGame = gameExt.getGameMap().get(gameExt.getGameRoom().getName());
-								int playerID = userGame.getPlayerId();
-								Map<Room, Integer> localMap = userGame.getPlayerIds();
-								log.info("MoveHandler Second Usergame - " + userGame.getName()
-										+ " and  user.getPlayerId() - " + user.getPlayerId());
-								final User innerUser = user;
-								localMap.forEach((Room, Id) -> {
-									log.info("MoveHandler Second  Room name- " + Room.getName()
-											+ ", K.getUserByName(user.getName()).getPlayerId()-  "
-											+ Room.getUserByName(innerUser.getName()).getPlayerId() + ", Player ID- : " + Id + " Room.getName().equalsIgnoreCase(gameExt.getGameRoom().getName())-"+Room.getName().equalsIgnoreCase(gameExt.getGameRoom().getName()));
-									if (Room.getName().equalsIgnoreCase(gameExt.getGameRoom().getName())) {
-										if (innerUser.getPlayerId() != Id) {
-											log.info(String.format(" Second Updating the playerId-%s to id- %s for user- %s",
-													innerUser.getPlayerId(), Id, innerUser.getName()));
-											innerUser.setPlayerId(Id, Room);
-											log.info(String.format("MoveHandler Second **Updating** user.setPlayerId(Id, Room);",Id,Room));
-										}
-									}
 
-								});
-								user = innerUser;
-								log.info("**************** Second user name - "+user.getName()+" and playerId -"+user.getPlayerId());
-
+							if (TrisExtension.getUserAssignedID()
+									.get(gameExt.getGameRoom().getName() + user.getName()) == null) {
+								log.info(
+										"*** UserAssignedID *** MoveHandler First updating the UserAssignedID gameExt.getUserAssignedID().get(gameExt.getGameRoom().getName()+user.getName()) "
+												+ gameExt.getGameRoom().getName() + user.getName() + " with user - "
+												+ user.getName() + " playerId - " + user.getPlayerId());
+								TrisExtension.getUserAssignedID().put(gameExt.getGameRoom().getName() + user.getName(),
+										user.getPlayerId());
 							}
-							List<User> userList = gameExt.getParentRoom().getUserList();
-							for(User userLocal:userList)
-							{
-								log.info("SEcond Tile Updating userLocal.getName() - "+userLocal.getName() + " and  user.getName() - "+user.getName());
-								if(userLocal.getName().equalsIgnoreCase(user.getName()))
-								{
-									log.info("**Internal Tile  Updating whoseturn second for user - "+userLocal + " playerId Local-  "+userLocal.getPlayerId() +" and user.getPlayerId() - "+user.getPlayerId());
-									if(user.getPlayerId() != userLocal.getPlayerId())
-									{
-										int id = userLocal.getPlayerId() == 1 ? 2 : 1;
-										userLocal.setPlayerId(id, userLocal.getLastJoinedRoom());
-										log.info(" Internal Final Tile  update after userLocal.getPlayerId() - "+userLocal.getPlayerId());
-										user = userLocal;
-									}
+							if (TrisExtension.getUserAssignedID()
+									.get(gameExt.getGameRoom().getName() + user.getName()) > 0) {
+								log.info(
+										"*** UserAssignedID *** MoveHandler First getting the UserAssignedID gameExt.getUserAssignedID().get(gameExt.getGameRoom().getName()+user.getName()) "
+												+ gameExt.getGameRoom().getName() + user.getName() + " with user - "
+												+ user.getName() + " playerId - " + user.getPlayerId());
+								Integer id = TrisExtension.getUserAssignedID()
+										.get(gameExt.getGameRoom().getName() + user.getName());
+								log.info("*** UserAssignedID *** got ID -" + id + " Recieved id - "
+										+ user.getPlayerId());
+								if (user.getPlayerId() != id) {
+									log.info(
+											"*** UserAssignedID *** First Updating PlayerID  before user.getPlayerId()-  "
+													+ user.getPlayerId() + "  after ID -  " + id);
+									user.setPlayerId(id, user.getLastJoinedRoom());
+									log.info("*** UserAssignedID *** First After Updating PlayerID -  "
+											+ user.getPlayerId());
 								}
 							}
-							Tile color = user.getPlayerId() == 1 ? Tile.GREEN : Tile.RED;
-							log.info("%%%%%%%%%%%%%%%%%  Color is - "+Tile.values());
-							// Set game board tile
+
 							board.setTileAt(moveX, moveY, user.getPlayerId() == 1 ? Tile.GREEN : Tile.RED);
 
 							// Send response
-							log.info("()()()()(Before) gameExt.getWhoseTurnSecond() - "+gameExt.getWhoseTurnSecond());
+							log.info("()()()()(Before) gameExt.getWhoseTurnSecond() - " + gameExt.getWhoseTurnSecond());
 							ISFSObject respObj = new SFSObject();
 							respObj.putInt("x", moveX);
 							respObj.putInt("y", moveY);
@@ -199,16 +203,21 @@ public class MoveHandler extends BaseClientRequestHandler {
 
 							// Switch turn
 							gameExt.updateTurnSecond(gameExt.getWhoseTurnSecond());
-							log.info("()()()()(After) gameExt.getWhoseTurnSecond() - "+gameExt.getWhoseTurnSecond());
+							log.info("()()()()(After) gameExt.getWhoseTurnSecond() - " + gameExt.getWhoseTurnSecond());
 							// Check if game is over
 							checkBoardStateSecond(gameExt);
-							log.info("MoveHandler Second move checkBoardState after gameExt.getGameMap().get(user.getName())- "
-											+ gameExt.getGameMap().get(gameExt.getGameRoom().getName()));
-							if (gameExt.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
+							log.info(
+									"MoveHandler Second move checkBoardState after gameExt.getGameMap().get(user.getName())- "
+											+ TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()));
+							if (TrisExtension.getGameMap().get(gameExt.getGameRoom().getName()) != null) {
 								log.info("MoveHandler Second updating the turn whoseturn value "
-										+ gameExt.getGameRoom().getName() + " and  gameExt.getWhoseTurnSecond() - "+gameExt.getWhoseTurnSecond());
-								gameExt.getGameMap().put(gameExt.getGameRoom().getName(), gameExt.getWhoseTurnSecond());
+										+ gameExt.getGameRoom().getName() + " and  gameExt.getWhoseTurnSecond() - "
+										+ gameExt.getWhoseTurnSecond());
+								if (gameExt.getWhoseTurn() != null)
+									TrisExtension.getGameMap().put(gameExt.getGameRoom().getName(),
+											gameExt.getWhoseTurnSecond());
 							}
+
 						}
 					} else
 						gameExt.trace(ExtensionLogLevel.WARN, "Wrong Second turn error. It was expcted: "
@@ -237,6 +246,15 @@ public class MoveHandler extends BaseClientRequestHandler {
 			// Send update
 			ISFSObject respObj = new SFSObject();
 			respObj.putInt("w", winnerId);
+			try
+			{
+				RoomVariable roomVar = gameExt.getGameRoom().getVariable("stake");
+				log.info("$$$$$$$$$$$$$ checkBoardState gameRoom.getVariable(\"stake\")   "+roomVar.getStringValue());
+				respObj.putText("stake",roomVar.getStringValue());
+			}
+			catch (Exception e) {
+				log.error("*Exception* inside the checkBoardStateSecond() is - "+e.getMessage());
+			}
 			gameExt.send(CMD_WIN, respObj, gameExt.getGameRoom().getUserList());
 
 			// Set the last game ending for spectators joining after the end and before a
@@ -279,6 +297,15 @@ public class MoveHandler extends BaseClientRequestHandler {
 				// Send update
 				ISFSObject respObj = new SFSObject();
 				respObj.putInt("w", winnerId);
+				try
+				{
+					RoomVariable roomVar = gameExt.getGameRoom().getVariable("stake");
+					log.info("$$$$$$$$$$$$$  checkBoardStateSecond gameRoom.getVariable(\"stake\")   "+roomVar.getStringValue());
+					respObj.putText("stake",roomVar.getStringValue());
+				}
+				catch (Exception e) {
+					log.error("*Exception* inside the checkBoardStateSecond() is - "+e.getMessage());
+				}
 				gameExt.send(CMD_WIN, respObj, gameExt.getGameRoom().getUserList());
 
 				// Set the last game ending for spectators joining after the end and before a
@@ -303,7 +330,9 @@ public class MoveHandler extends BaseClientRequestHandler {
 				// new game starts
 				gameExt.setLastGameEndResponseSecond(new LastGameEndResponseSecond(CMD_TIE, respObj));
 			}
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			log.error("Exception inside the MoveHandler is - " + e.getMessage());
 		}
 	}
